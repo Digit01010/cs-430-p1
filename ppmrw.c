@@ -12,6 +12,7 @@ typedef struct Header {
 } Header;
 
 Header parseHeader(FILE *);
+void readP3(Pixel *, Header, FILE *);
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
@@ -21,22 +22,60 @@ int main(int argc, char *argv[]) {
   
   FILE* fh = fopen(argv[2], "r");
   Header h = parseHeader(fh);
+  
+  Pixel *buffer = malloc(sizeof(Pixel) * h.width * h.height);
+  
   printf("%d %d %d %d \n", h.magicNumber, h.width, h.height, h.maxColor);
   fclose(fh);
   return 0;
 }
 
 Header parseHeader(FILE *fh) {
-  Header header;
+  Header h;
   
   if (fgetc(fh) != 'P') {
     exit(1);
   }
   
-  fscanf(fh, "%d ", &header.magicNumber);
-  fscanf(fh, "%d ", &header.width);
-  fscanf(fh, "%d ", &header.height);
-  fscanf(fh, "%d ", &header.maxColor);
+  
+  fscanf(fh, "%d ", &h.magicNumber);
+  
+  char c = fgetc(fh);
+  while (c == '#') {
+    while (fgetc(fh) != '\n') {}
+    c = fgetc(fh);
+  }
+  ungetc(c, fh);
+  
+  fscanf(fh, "%d ", &h.width);
+  
+  c = fgetc(fh);
+  while (c == '#') {
+    while (fgetc(fh) != '\n') {}
+    c = fgetc(fh);
+  }
+  ungetc(c, fh);
+  
+  fscanf(fh, "%d ", &h.height);
+  
+  c = fgetc(fh);
+  while (c == '#') {
+    while (fgetc(fh) != '\n') {}
+    c = fgetc(fh);
+  }
+  ungetc(c, fh);
+  
+  fscanf(fh, "%d", &h.maxColor);
+  fgetc(fh);
    
-  return header;
+  return h;
 }
+
+void readP3(Pixel *buffer, Header h, FILE *fh) {
+  for (int i = 0; i < h.width * h.height; i++) {
+     fscanf(fh, "%d", &buffer[i].red);
+     fscanf(fh, "%d", &buffer[i].green);
+     fscanf(fh, "%d", &buffer[i].blue);
+  }
+}
+
