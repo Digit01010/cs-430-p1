@@ -1,3 +1,6 @@
+// Project 1 - Images
+// Jeffrey Covington
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
