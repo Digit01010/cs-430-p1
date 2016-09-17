@@ -16,6 +16,7 @@ void readP3(Pixel *, Header, FILE *);
 void writeP3(Pixel *, Header, FILE *);
 void readP6(Pixel *, Header, FILE *);
 void writeP6(Pixel *, Header, FILE *);
+void skipComments(FILE *);
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
@@ -37,9 +38,13 @@ int main(int argc, char *argv[]) {
   }
   
   FILE* input = fopen(argv[2], "r");
+  if (input == NULL) {
+    fprintf(stderr, "Error: Unable to open input file.");
+    return 1;
+  }
   Header inHeader = parseHeader(input);
   
-  if (header.maxColor > 255) {
+  if (inHeader.maxColor > 255) {
     fprintf(stderr, "Error: Maximum color greater than 255 not supported.\n");
     return 1;
   }
@@ -51,12 +56,20 @@ int main(int argc, char *argv[]) {
   else if (inHeader.magicNumber == 6) {
     readP6(buffer, inHeader, input);
   }
+  else {
+    fprintf(stderr, "Error: Input magic number not supported.\n");
+  }
   fclose(input);
   
   Header outHeader = inHeader;
   outHeader.magicNumber = outMagicNumber; 
   
   FILE* output = fopen(argv[3], "w");
+  if (output == NULL) {
+    fprintf(stderr, "Error: Unable to open output file.");
+    return 1;
+  }
+  
   if (outMagicNumber == 3) {
     writeP3(buffer, outHeader, output);
   }
@@ -77,39 +90,29 @@ Header parseHeader(FILE *fh) {
   Header h;
   
   if (fgetc(fh) != 'P') {
+    fprintf(stderr, "Error: Malformed input magic number. \n");
     exit(1);
   }
   
-  
   fscanf(fh, "%d ", &h.magicNumber);
   
-  char c = fgetc(fh);
-  while (c == '#') {
-    while (fgetc(fh) != '\n') {}
-    c = fgetc(fh);
-  }
-  ungetc(c, fh);
+  skipComments(fh);
   
   fscanf(fh, "%d ", &h.width);
   
-  c = fgetc(fh);
-  while (c == '#') {
-    while (fgetc(fh) != '\n') {}
-    c = fgetc(fh);
-  }
-  ungetc(c, fh);
+  skipComments(fh);
   
   fscanf(fh, "%d ", &h.height);
   
-  c = fgetc(fh);
-  while (c == '#') {
-    while (fgetc(fh) != '\n') {}
-    c = fgetc(fh);
-  }
-  ungetc(c, fh);
+  skipComments(fh);
   
   fscanf(fh, "%d", &h.maxColor);
   fgetc(fh);
+  
+  if (ferror(fh) != 0) {
+     fprintf(stderr, "Error: Unable to read header.");
+     exit(1);
+  }
    
   return h;
 }
@@ -117,6 +120,10 @@ Header parseHeader(FILE *fh) {
 void readP3(Pixel *buffer, Header h, FILE *fh) {
   for (int i = 0; i < h.width * h.height; i++) {
      fscanf(fh, "%d %d %d", &buffer[i].red, &buffer[i].green, &buffer[i].blue);
+  }
+  if (ferror(fh) != 0) {
+     fprintf(stderr, "Error: Unable to read data.");
+     exit(1);
   }
 }
 
@@ -133,6 +140,10 @@ void readP6(Pixel *buffer, Header h, FILE *fh) {
      buffer[i].green = fgetc(fh);
      buffer[i].blue = fgetc(fh);
   }
+  if (ferror(fh) != 0) {
+     fprintf(stderr, "Error: Unable to read data.");
+     exit(1);
+  }
 }
 
 void writeP6(Pixel *buffer, Header h, FILE *fh) {
@@ -143,5 +154,23 @@ void writeP6(Pixel *buffer, Header h, FILE *fh) {
      fputc(buffer[i].blue, fh);
   }
 }
+
+void skipComments(FILE *fh) {
+  char c = fgetc(fh);
+  while (c == '#') {
+    do {
+      c = fgetc(fh);
+      if (c == EOF) {
+        fprintf(stderr, "Error: Reached EOF when parsing comment.");
+        exit(1);
+      }
+    } while (c != '\n');
+
+    c = fgetc(fh);
+  }
+  ungetc(c, fh);
+}
+
+
 
 
