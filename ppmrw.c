@@ -15,23 +15,58 @@ Header parseHeader(FILE *);
 void readP3(Pixel *, Header, FILE *);
 void writeP3(Pixel *, Header, FILE *);
 void readP6(Pixel *, Header, FILE *);
-void writeP6(Pixel *, Header, FILE *)
+void writeP6(Pixel *, Header, FILE *);
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
-    printf("Usage: ppmrw mn input output\n");
+    fprintf(stderr, "Error: Incorrect number of arguments.\n");
+    printf("Usage: ppmrw outputMagicNumber inputFile outputFile\n");
     return(1);
   }
   
-  FILE* input = fopen(argv[2], "r");
-  Header h = parseHeader(input);
+  char outMagicNumber;
+  if (strcmp(argv[1], "3") == 0) {
+    outMagicNumber = 3;
+  }
+  else if (strcmp(argv[1], "6") == 0) {
+    outMagicNumber = 6;
+  }
+  else {
+    fprintf(stderr, "Error: Output magic number not supported.\n");
+    return 1;
+  }
   
-  Pixel *buffer = malloc(sizeof(Pixel) * h.width * h.height);
-  readP6(buffer, h, input);
+  FILE* input = fopen(argv[2], "r");
+  Header inHeader = parseHeader(input);
+  
+  if (header.maxColor > 255) {
+    fprintf(stderr, "Error: Maximum color greater than 255 not supported.\n");
+    return 1;
+  }
+  
+  Pixel *buffer = malloc(sizeof(Pixel) * inHeader.width * inHeader.height);
+  if (inHeader.magicNumber == 3) {
+    readP3(buffer, inHeader, input);
+  }
+  else if (inHeader.magicNumber == 6) {
+    readP6(buffer, inHeader, input);
+  }
   fclose(input);
   
+  Header outHeader = inHeader;
+  outHeader.magicNumber = outMagicNumber; 
+  
   FILE* output = fopen(argv[3], "w");
-  writeP3(buffer, h, output);
+  if (outMagicNumber == 3) {
+    writeP3(buffer, outHeader, output);
+  }
+  else if (outMagicNumber == 6) {
+    writeP6(buffer, outHeader, output);
+  }
+  else {
+    fprintf(stderr, "Error: Programmer forgot to support valid output magic number.\n");
+    return 1;
+  }
   fclose(output);
   
   
