@@ -14,6 +14,8 @@ typedef struct Header {
 Header parseHeader(FILE *);
 void readP3(Pixel *, Header, FILE *);
 void writeP3(Pixel *, Header, FILE *);
+void readP6(Pixel *, Header, FILE *);
+void writeP6(Pixel *, Header, FILE *)
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
@@ -25,7 +27,7 @@ int main(int argc, char *argv[]) {
   Header h = parseHeader(input);
   
   Pixel *buffer = malloc(sizeof(Pixel) * h.width * h.height);
-  readP3(buffer, h, input);
+  readP6(buffer, h, input);
   fclose(input);
   
   FILE* output = fopen(argv[3], "w");
@@ -79,9 +81,7 @@ Header parseHeader(FILE *fh) {
 
 void readP3(Pixel *buffer, Header h, FILE *fh) {
   for (int i = 0; i < h.width * h.height; i++) {
-     fscanf(fh, "%d", &buffer[i].red);
-     fscanf(fh, "%d", &buffer[i].green);
-     fscanf(fh, "%d", &buffer[i].blue);
+     fscanf(fh, "%d %d %d", &buffer[i].red, &buffer[i].green, &buffer[i].blue);
   }
 }
 
@@ -92,5 +92,21 @@ void writeP3(Pixel *buffer, Header h, FILE *fh) {
   }
 }
 
+void readP6(Pixel *buffer, Header h, FILE *fh) {
+  for (int i = 0; i < h.width * h.height; i++) {
+     buffer[i].red = fgetc(fh);
+     buffer[i].green = fgetc(fh);
+     buffer[i].blue = fgetc(fh);
+  }
+}
+
+void writeP6(Pixel *buffer, Header h, FILE *fh) {
+  fprintf(fh, "P%d\n%d %d\n%d\n", h.magicNumber, h.width, h.height, h.maxColor);
+  for (int i = 0; i < h.width * h.height; i++) {
+     fputc(buffer[i].red, fh);
+     fputc(buffer[i].green, fh);
+     fputc(buffer[i].blue, fh);
+  }
+}
 
 
