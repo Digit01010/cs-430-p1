@@ -13,6 +13,7 @@ typedef struct Header {
 
 Header parseHeader(FILE *);
 void readP3(Pixel *, Header, FILE *);
+void writeP3(Pixel *, Header, FILE *);
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
@@ -20,13 +21,18 @@ int main(int argc, char *argv[]) {
     return(1);
   }
   
-  FILE* fh = fopen(argv[2], "r");
-  Header h = parseHeader(fh);
+  FILE* input = fopen(argv[2], "r");
+  Header h = parseHeader(input);
   
   Pixel *buffer = malloc(sizeof(Pixel) * h.width * h.height);
+  readP3(buffer, h, input);
+  fclose(input);
   
-  printf("%d %d %d %d \n", h.magicNumber, h.width, h.height, h.maxColor);
-  fclose(fh);
+  FILE* output = fopen(argv[3], "w");
+  writeP3(buffer, h, output);
+  fclose(output);
+  
+  
   return 0;
 }
 
@@ -78,4 +84,13 @@ void readP3(Pixel *buffer, Header h, FILE *fh) {
      fscanf(fh, "%d", &buffer[i].blue);
   }
 }
+
+void writeP3(Pixel *buffer, Header h, FILE *fh) {
+  fprintf(fh, "P%d\n%d %d\n%d\n", h.magicNumber, h.width, h.height, h.maxColor);
+  for (int i = 0; i < h.width * h.height; i++) {
+     fprintf(fh, "%d\n%d\n%d\n", buffer[i].red, buffer[i].green, buffer[i].blue);
+  }
+}
+
+
 
